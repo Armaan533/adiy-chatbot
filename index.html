@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HealthAwareness Bot</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .disclaimer {
+      background-color: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-size: 0.9rem;
+      max-width: 500px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .chat-container {
+      width: 100%;
+      max-width: 500px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      overflow: hidden;
+      background-color: white;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    .chat-header {
+      background: linear-gradient(90deg, #4CAF50, #2E7D32);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.5rem;
+    }
+    #chat-box {
+      height: 400px;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      background-color: #fafafa;
+    }
+    .user-msg, .bot-msg {
+      max-width: 80%;
+      padding: 12px 16px;
+      margin: 8px 0;
+      border-radius: 18px;
+      line-height: 1.4;
+      animation: fadeIn 0.3s ease-in-out;
+      word-break: break-word;
+    }
+    .user-msg {
+      align-self: flex-end;
+      background-color: #dcf8c6;
+      border-bottom-right-radius: 5px;
+    }
+    .bot-msg {
+      align-self: flex-start;
+      background-color: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-bottom-left-radius: 5px;
+    }
+    .input-area {
+      display: flex;
+      padding: 15px;
+      border-top: 1px solid #e0e0e0;
+      background-color: white;
+    }
+    #user-input {
+      flex-grow: 1;
+      padding: 12px 18px;
+      border: 1px solid #ccc;
+      border-radius: 25px;
+      margin-right: 10px;
+      font-size: 1rem;
+      outline: none;
+    }
+    #user-input:focus {
+      border-color: #4CAF50;
+    }
+    #send-btn {
+      padding: 12px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+    #send-btn:hover {
+      background-color: #45a049;
+    }
+    .typing-loader {
+      display: none;
+      align-self: flex-start;
+      margin: 8px 0;
+      padding: 15px 20px;
+    }
+    .typing-loader div {
+      width: 10px;
+      height: 10px;
+      background-color: #a0a0a0;
+      border-radius: 50%;
+      display: inline-block;
+      margin: 0 3px;
+      animation: bounce 1.5s infinite ease-in-out both;
+    }
+    .typing-loader div:nth-child(1) { animation-delay: -0.32s; }
+    .typing-loader div:nth-child(2) { animation-delay: -0.16s; }
+    .follow-up-btn {
+      margin: 4px;
+      padding: 8px 16px;
+      background-color: #e8f5e9;
+      color: #2E7D32;
+      border: 1px solid #c8e6c9;
+      border-radius: 16px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .follow-up-btn:hover {
+      background-color: #c8e6c9;
+      transform: translateY(-2px);
+    }
+    #button-container {
+      display: flex;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1.0); }
+    }
+    @media (max-width: 600px) {
+      .chat-container {
+        width: 95%;
+        border-radius: 15px;
+      }
+      .user-msg, .bot-msg {
+        max-width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="disclaimer">
+    <strong>⚠ Important Disclaimer:</strong> This chatbot provides information for educational and awareness purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.
+  </div>
+
+  <div class="chat-container">
+    <div class="chat-header">
+      <h2>HealthAwareness Bot</h2>
+    </div>
+    <div id="chat-box">
+      <div class="bot-msg">Hi there! I'm your health awareness assistant. What disease would you like to learn about today? (e.g., Diabetes, Malaria, Flu)</div>
+    </div>
+    <div class="input-area">
+      <input type="text" id="user-input" placeholder="Type a disease name...">
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // This frontend does NOT talk to Cohere directly.
+    // It calls a server-side endpoint at /.netlify/functions/generate (Netlify Functions) which holds your COHERE_API_KEY.
+    // If you host somewhere else, point to your server endpoint instead.
+
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    function addMessage(sender, text, isButtonContainer = false) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = sender + '-msg';
+      if (isButtonContainer) {
+        msgDiv.id = 'button-container';
+      } else {
+        // allow simple HTML for newlines
+        msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+      }
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function showLoader() {
+      hideLoader();
+      const loaderDiv = document.createElement('div');
+      loaderDiv.className = 'typing-loader';
+      loaderDiv.id = 'loader';
+      loaderDiv.innerHTML = '<div></div><div></div><div></div>';
+      loaderDiv.style.display = 'flex';
+      chatBox.appendChild(loaderDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function hideLoader() {
+      const loader = document.getElementById('loader');
+      if (loader) loader.remove();
+    }
+
+    function addFollowUpButtons(diseaseName) {
+      let buttonContainer = document.getElementById('button-container');
+      if (!buttonContainer) {
+        addMessage('bot', '', true);
+        buttonContainer = document.getElementById('button-container');
+      }
+      buttonContainer.innerHTML = '';
+
+      const topics = ['Symptoms', 'Prevention', 'Causes', 'Treatment', 'Overview'];
+      topics.forEach(topic => {
+        const button = document.createElement('button');
+        button.textContent = topic;
+        button.className = 'follow-up-btn';
+        button.onclick = () => {
+          let question;
+          if (topic === 'Overview') {
+            question = `Give me a concise summary of ${diseaseName}.`;
+          } else {
+            question = `What are the ${topic.toLowerCase()} of ${diseaseName}? Summarize in a short paragraph.`;
+          }
+          addMessage('user', question);
+          askCohere(question, diseaseName);
+        };
+        buttonContainer.appendChild(button);
+      });
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function askCohere(userQuestion, diseaseName) {
+      showLoader();
+      try {
+        const res = await fetch('/.netlify/functions/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: userQuestion,
+            max_tokens: 250
+          })
+        });
+
+        const data = await res.json();
+        hideLoader();
+
+        if (!res.ok) {
+          console.error('Server error:', data);
+          addMessage('bot', "Sorry, I'm having trouble right now. Please try again shortly.");
+          return;
+        }
+
+        const aiText = data.text || "Sorry, I couldn't generate a response.";
+        addMessage('bot', aiText);
+        addFollowUpButtons(diseaseName);
+
+      } catch (err) {
+        hideLoader();
+        console.error('Fetch error:', err);
+        addMessage('bot', "Network error. Please check your connection and try again.");
+      }
+    }
+
+    function handleSend() {
+      const diseaseQuery = userInput.value.trim();
+      if (!diseaseQuery) return;
+      addMessage('user', diseaseQuery);
+      userInput.value = "";
+      askCohere(`Give me a concise summary of the disease: ${diseaseQuery}`, diseaseQuery);
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleSend();
+    });
+  </script>
+</body>
+</html>
