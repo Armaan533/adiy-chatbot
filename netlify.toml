@@ -1,0 +1,6 @@
+[build]
+  functions = "netlify/functions"
+
+# If you have a build step for a framework like React/Vue, add it here.
+# Otherwise, you can leave it out or point to a non-existent command.
+# command = "npm run build"
